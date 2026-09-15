@@ -188,6 +188,35 @@
 <div id="modal-root"></div>
 
 <script>
+/* ---------------- fallback de armazenamento ----------------
+   window.storage só existe quando este app roda dentro dos
+   Artifacts do Claude.ai. Se o arquivo for aberto direto no
+   navegador ou hospedado em outro lugar, criamos aqui uma versão
+   equivalente usando localStorage, para a criação de conta e o
+   login continuarem funcionando normalmente. */
+if(!window.storage){
+  window.storage = {
+    async get(key, shared){
+      const raw = localStorage.getItem('edithub:'+key);
+      if(raw === null) throw new Error('key not found');
+      return { key, value: raw, shared: !!shared };
+    },
+    async set(key, value, shared){
+      localStorage.setItem('edithub:'+key, value);
+      return { key, value, shared: !!shared };
+    },
+    async delete(key, shared){
+      localStorage.removeItem('edithub:'+key);
+      return { key, deleted: true, shared: !!shared };
+    },
+    async list(prefix, shared){
+      const p = 'edithub:'+(prefix||'');
+      const keys = Object.keys(localStorage).filter(k=>k.startsWith(p)).map(k=>k.slice(8));
+      return { keys, prefix, shared: !!shared };
+    }
+  };
+}
+
 /* ---------------- constantes ---------------- */
 const CATS = ["MMV","AMV","Lyric","Outro"];
 const STAGE_KEYS = [["storyboard","Storyboard"],["recortes","Recortes"],["camera","Câmera"],["cc","CC"]];
@@ -221,7 +250,11 @@ async function getAccount(email){
   }catch(e){ return null; }
 }
 async function saveAccount(acct){
-  await window.storage.set('acct:'+acct.email, JSON.stringify(acct), true);
+  try{
+    await window.storage.set('acct:'+acct.email, JSON.stringify(acct), true);
+  }catch(e){
+    throw new Error('Não foi possível salvar a conta. Tente novamente.');
+  }
 }
 async function loadUserData(email){
   try{
@@ -279,15 +312,19 @@ async function doRegister(){
   if(pass !== pass2){ showAuthMsg('As senhas não coincidem.'); return; }
   const existing = await getAccount(email);
   if(existing){ showAuthMsg('Já existe uma conta com esse e-mail. Tente entrar.'); return; }
-  const salt = uid();
-  const passwordHash = await sha256Hex(salt + pass);
-  await saveAccount({ name, email, salt, passwordHash });
-  DATA = defaultData();
-  CURRENT_USER = { email, name };
-  await saveData();
-  try{ await window.storage.set('session', email, false); }catch(e){}
-  TAB = 'dashboard';
-  render();
+  try{
+    const salt = uid();
+    const passwordHash = await sha256Hex(salt + pass);
+    await saveAccount({ name, email, salt, passwordHash });
+    DATA = defaultData();
+    CURRENT_USER = { email, name };
+    await saveData();
+    try{ await window.storage.set('session', email, false); }catch(e){}
+    TAB = 'dashboard';
+    render();
+  }catch(e){
+    showAuthMsg(e.message || 'Erro ao criar conta. Tente novamente.');
+  }
 }
 async function doLogout(){
   try{ await window.storage.delete('session', false); }catch(e){}
