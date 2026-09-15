@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EditHub — Organizador de Projetos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#121218;
+    --panel:#1a1b22;
+    --panel-2:#20222c;
+    --border:#2b2d38;
+    --text:#e9e8e4;
+    --text-dim:#96969f;
+    --accent:#e59a3c;      /* âmbar — marcador de timeline */
+    --accent-soft:#e59a3c22;
+    --teal:#4fb0a5;        /* teal — dupla clássica de correção de cor */
+    --teal-soft:#4fb0a522;
+    --ok:#4fb37e;
+    --warn:#e5b23c;
+    --late:#e2574c;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;}
+  h1,h2,h3,.brand{font-family:'Space Grotesk',sans-serif;}
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+  a{color:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select,textarea{font-family:inherit;background:var(--panel-2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 11px;font-size:13.5px;width:100%;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);}
+  label{display:block;font-size:12px;color:var(--text-dim);margin:0 0 5px 2px;}
+  .field{margin-bottom:14px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+  /* layout */
+  #app{display:flex;min-height:100vh;}
+  nav.side{width:220px;flex:none;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 14px;}
+  .brand{font-size:19px;font-weight:700;letter-spacing:-0.02em;padding:4px 8px 22px;display:flex;align-items:center;gap:9px;}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  .navitem{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--text-dim);font-size:13.5px;font-weight:500;border-left:2px solid transparent;margin-bottom:2px;}
+  .navitem svg{width:16px;height:16px;flex:none;opacity:.85;}
+  .navitem.active{background:var(--panel-2);color:var(--text);border-left:2px solid var(--accent);}
+  .navitem:hover{color:var(--text);}
+  .side-foot{margin-top:auto;padding:10px 8px;font-size:11px;color:var(--text-dim);line-height:1.6;}
+  .side-foot .logout-link{color:var(--accent);cursor:pointer;font-weight:600;}
+  .side-foot .logout-link:hover{text-decoration:underline;}
+
+  main{flex:1;padding:28px 34px;max-width:1180px;}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:22px;flex-wrap:wrap;gap:10px;}
+  .topbar h1{font-size:22px;margin:0 0 3px;}
+  .topbar p{margin:0;color:var(--text-dim);font-size:13px;}
+  .btn{background:var(--accent);color:#1a1408;border:none;padding:10px 16px;border-radius:8px;font-weight:600;font-size:13.5px;}
+  .btn:hover{filter:brightness(1.08);}
+  .btn.secondary{background:var(--panel-2);color:var(--text);border:1px solid var(--border);}
+  .btn.ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border);}
+  .btn.danger{background:transparent;color:var(--late);border:1px solid #e2574c55;}
+  .btn.small{padding:6px 10px;font-size:12px;border-radius:6px;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+  .panel + .panel{margin-top:18px;}
+
+  /* dashboard filters */
+  .filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+  .chip{padding:7px 13px;border-radius:20px;background:var(--panel);border:1px solid var(--border);color:var(--text-dim);font-size:12.5px;font-weight:500;}
+  .chip.active{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);}
+  .search{max-width:260px;margin-left:auto;}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+
+  /* project card */
+  .card{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--ok);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:10px;}
+  .card.warn{border-left-color:var(--warn);}
+  .card.late{border-left-color:var(--late);}
+  .card.done{border-left-color:var(--teal);opacity:.8;}
+  .card-head{display:flex;justify-content:space-between;align-items:flex-start;}
+  .card-head h3{margin:0;font-size:15.5px;}
+  .card-head .client{font-size:12px;color:var(--text-dim);margin-top:2px;}
+  .tag{font-size:10.5px;font-weight:600;letter-spacing:.02em;background:var(--teal-soft);color:var(--teal);padding:2px 8px;border-radius:12px;}
+  .deadline{font-size:12px;color:var(--text-dim);}
+  .deadline b{color:var(--text);}
+  .stages{display:flex;gap:6px;flex-wrap:wrap;}
+  .stage-pill{font-size:11px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--panel-2);color:var(--text-dim);}
+  .stage-pill[data-s="andamento"]{color:var(--warn);border-color:#e5b23c55;}
+  .stage-pill[data-s="concluido"]{color:var(--ok);border-color:#4fb37e55;}
+  .progress-wrap{display:flex;align-items:center;gap:8px;}
+  .progress-wrap input[type=range]{width:100%;accent-color:var(--accent);padding:0;background:none;border:none;}
+  .progress-wrap span{font-size:11.5px;color:var(--text-dim);width:32px;text-align:right;}
+  .card-value{font-size:16px;font-weight:700;font-family:'Space Grotesk',sans-serif;}
+  details.checklist summary{cursor:pointer;font-size:12px;color:var(--text-dim);}
+  .cl-item{display:flex;align-items:center;gap:7px;font-size:12.5px;padding:4px 0;}
+  .cl-item input{width:auto;}
+  .cl-item.done span{text-decoration:line-through;color:var(--text-dim);}
+  .card-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px;}
+
+  /* kanban */
+  .kanban{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;align-items:start;}
+  .kan-col{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px;min-height:160px;}
+  .kan-col h3{margin:2px 6px 10px;font-size:13px;color:var(--text-dim);text-transform:none;display:flex;justify-content:space-between;}
+  .kan-card{background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:10px 11px;margin-bottom:8px;cursor:grab;}
+  .kan-card b{font-size:13px;display:block;}
+  .kan-card span{font-size:11.5px;color:var(--text-dim);}
+  .kan-col.dragover{border-color:var(--accent);background:var(--accent-soft);}
+
+  /* misc panels */
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px;}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+  .stat .label{font-size:12px;color:var(--text-dim);margin-bottom:6px;}
+  .stat .value{font-size:22px;font-weight:700;font-family:'Space Grotesk',sans-serif;}
+  .bars{display:flex;align-items:flex-end;gap:10px;height:140px;margin-top:10px;}
+  .bar{flex:1;background:linear-gradient(180deg,var(--accent),var(--teal));border-radius:4px 4px 0 0;position:relative;min-height:3px;}
+  .bar span{position:absolute;top:-18px;left:0;right:0;text-align:center;font-size:10.5px;color:var(--text-dim);}
+  .bar em{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:10.5px;font-style:normal;color:var(--text-dim);}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;color:var(--text-dim);font-weight:500;font-size:11.5px;padding:8px 10px;border-bottom:1px solid var(--border);}
+  td{padding:9px 10px;border-bottom:1px solid var(--border);}
+  tr:last-child td{border-bottom:none;}
+
+  .agenda-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:var(--panel-2);}
+  .agenda-item .dleft{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;white-space:nowrap;margin-left:10px;}
+  .agenda-item.late .dleft{color:var(--late);}
+  .agenda-item.warn .dleft{color:var(--warn);}
+  .agenda-item.ok .dleft{color:var(--ok);}
+
+  .empty{color:var(--text-dim);font-size:13px;padding:30px 10px;text-align:center;border:1px dashed var(--border);border-radius:var(--radius);}
+
+  .modal-bg{position:fixed;inset:0;background:#0009;display:flex;align-items:center;justify-content:center;z-index:50;}
+  .modal{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px;width:440px;max-width:92vw;max-height:88vh;overflow:auto;}
+  .modal h2{margin:0 0 16px;font-size:17px;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+  .hidden{display:none !important;}
+
+  .tabsec{display:none;}
+  .tabsec.active{display:block;}
+
+  /* auth screen */
+  .auth-wrap{width:100%;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .auth-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:30px 28px;width:380px;max-width:100%;}
+  .auth-tabs{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:20px;}
+  .auth-tab{flex:1;text-align:center;padding:9px 0;font-size:13px;font-weight:600;color:var(--text-dim);background:var(--panel-2);}
+  .auth-tab.active{background:var(--accent-soft);color:var(--accent);}
+  .auth-msg{font-size:12.5px;color:var(--late);min-height:16px;margin-top:4px;}
+  .auth-msg.ok{color:var(--ok);}
+  .auth-hint{font-size:11px;color:var(--text-dim);margin-top:-6px;margin-bottom:14px;line-height:1.5;}
+
+  /* calendário */
+  .cal-topbar-btns{display:flex;gap:8px;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+  .cal-weekdays{margin-bottom:8px;}
+  .cal-wd{text-align:center;font-size:11px;color:var(--text-dim);font-weight:600;padding:2px 0;}
+  .cal-cell{min-height:64px;border:1px solid var(--border);border-radius:8px;background:var(--panel-2);padding:5px 6px;cursor:pointer;display:flex;flex-direction:column;gap:4px;}
+  .cal-cell.empty-cell{background:transparent;border:none;cursor:default;}
+  .cal-cell:hover{border-color:var(--accent);}
+  .cal-cell.today{border-color:var(--teal);}
+  .cal-cell.selected{background:var(--accent-soft);border-color:var(--accent);}
+  .cal-daynum{font-size:12px;font-weight:600;color:var(--text-dim);display:flex;align-items:center;gap:4px;}
+  .cal-cell.today .cal-daynum{color:var(--teal);}
+  .cal-flag{color:var(--late);font-size:8px;}
+  .cal-rem{color:var(--warn);font-size:9px;}
+  .cal-bars{display:flex;flex-direction:column;gap:2px;}
+  .cal-bar{height:4px;border-radius:2px;}
+  .cal-more{font-size:9.5px;color:var(--text-dim);}
+
+  @media (max-width:880px){
+    #app{flex-direction:column;}
+    nav.side{width:100%;flex-direction:row;overflow-x:auto;padding:10px 12px;border-right:none;border-bottom:1px solid var(--border);}
+    .brand{display:none;}
+    .navitem{flex-direction:column;font-size:10.5px;gap:3px;border-left:none;border-bottom:2px solid transparent;white-space:nowrap;}
+    .navitem.active{border-left:none;border-bottom:2px solid var(--accent);}
+    .side-foot{display:none;}
+    main{padding:18px;}
+    .kanban{grid-template-columns:1fr;}
+    .stat-row{grid-template-columns:1fr;}
+    .cal-cell{min-height:48px;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <nav class="side" id="sidenav"></nav>
+  <main id="main"></main>
+</div>
+<div id="modal-root"></div>
+
+<script>
+/* ---------------- constantes ---------------- */
+const CATS = ["MMV","AMV","Lyric","Outro"];
+const STAGE_KEYS = [["storyboard","Storyboard"],["recortes","Recortes"],["camera","Câmera"],["cc","CC"]];
+const STAGE_CYCLE = ["pendente","andamento","concluido"];
+
+let CURRENT_USER = null; // {email, name}
+let DATA = defaultData();
+let TAB = "dashboard";
+let DASH_FILTER = "todos";
+let DASH_SEARCH = "";
+let AUTH_MODE = "login";
+let CAL_DATE = new Date();
+let CAL_SELECTED = todayStr();
+
+function uid(){ return Math.random().toString(36).slice(2,10)+Date.now().toString(36); }
+function defaultData(){ return { projects: [], clients: [], settings: { profileName:"", bio:"", proxDays:3, reminders:[] } }; }
+function pad(n){ return String(n).padStart(2,'0'); }
+function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function normEmail(e){ return (e||"").trim().toLowerCase(); }
+
+/* ---------------- autenticação (contas + senha com hash) ---------------- */
+async function sha256Hex(str){
+  const enc = new TextEncoder().encode(str);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function getAccount(email){
+  try{
+    const r = await window.storage.get('acct:'+email, true);
+    return r ? JSON.parse(r.value) : null;
+  }catch(e){ return null; }
+}
+async function saveAccount(acct){
+  await window.storage.set('acct:'+acct.email, JSON.stringify(acct), true);
+}
+async function loadUserData(email){
+  try{
+    const r = await window.storage.get('data:'+email, true);
+    DATA = r && r.value ? JSON.parse(r.value) : defaultData();
+  }catch(e){ DATA = defaultData(); }
+  if(!DATA.settings) DATA.settings = { profileName:"", bio:"", proxDays:3, reminders:[] };
+  if(!DATA.clients) DATA.clients = [];
+  if(!DATA.projects) DATA.projects = [];
+}
+async function saveData(){
+  if(!CURRENT_USER) return;
+  try{ await window.storage.set('data:'+CURRENT_USER.email, JSON.stringify(DATA), true); }
+  catch(e){ console.error("Falha ao salvar", e); }
+}
+async function init(){
+  try{
+    const s = await window.storage.get('session', false);
+    if(s && s.value){
+      const acct = await getAccount(s.value);
+      if(acct){
+        CURRENT_USER = { email: acct.email, name: acct.name };
+        await loadUserData(acct.email);
+      }
+    }
+  }catch(e){ /* sem sessão salva ainda */ }
+  render();
+}
+function showAuthMsg(text, ok){
+  const el = document.getElementById('auth-msg');
+  if(el){ el.textContent = text; el.className = 'auth-msg'+(ok?' ok':''); }
+}
+async function doLogin(){
+  const email = normEmail(document.getElementById('au-email').value);
+  const pass = document.getElementById('au-pass').value;
+  if(!email || !pass){ showAuthMsg('Preencha e-mail e senha.'); return; }
+  const acct = await getAccount(email);
+  if(!acct){ showAuthMsg('Não encontramos uma conta com esse e-mail.'); return; }
+  const hash = await sha256Hex(acct.salt + pass);
+  if(hash !== acct.passwordHash){ showAuthMsg('Senha incorreta.'); return; }
+  CURRENT_USER = { email: acct.email, name: acct.name };
+  await loadUserData(acct.email);
+  try{ await window.storage.set('session', acct.email, false); }catch(e){}
+  TAB = 'dashboard';
+  render();
+}
+async function doRegister(){
+  const name = document.getElementById('au-name').value.trim();
+  const email = normEmail(document.getElementById('au-email2').value);
+  const pass = document.getElementById('au-pass2').value;
+  const pass2 = document.getElementById('au-pass3').value;
+  if(!name || !email || !pass){ showAuthMsg('Preencha todos os campos.'); return; }
+  if(!email.includes('@')){ showAuthMsg('Digite um e-mail válido.'); return; }
+  if(pass.length < 6){ showAuthMsg('A senha precisa ter pelo menos 6 caracteres.'); return; }
+  if(pass !== pass2){ showAuthMsg('As senhas não coincidem.'); return; }
+  const existing = await getAccount(email);
+  if(existing){ showAuthMsg('Já existe uma conta com esse e-mail. Tente entrar.'); return; }
+  const salt = uid();
+  const passwordHash = await sha256Hex(salt + pass);
+  await saveAccount({ name, email, salt, passwordHash });
+  DATA = defaultData();
+  CURRENT_USER = { email, name };
+  await saveData();
+  try{ await window.storage.set('session', email, false); }catch(e){}
+  TAB = 'dashboard';
+  render();
+}
+async function doLogout(){
+  try{ await window.storage.delete('session', false); }catch(e){}
+  CURRENT_USER = null;
+  DATA = defaultData();
+  TAB = 'dashboard';
+  render();
+}
+async function changePassword(){
+  const cur = document.getElementById('cf-curpass').value;
+  const nw = document.getElementById('cf-newpass').value;
+  const nw2 = document.getElementById('cf-newpass2').value;
+  if(!cur || !nw){ alert('Preencha a senha atual e a nova senha.'); return; }
+  if(nw.length < 6){ alert('A nova senha precisa ter pelo menos 6 caracteres.'); return; }
+  if(nw !== nw2){ alert('As novas senhas não coincidem.'); return; }
+  const acct = await getAccount(CURRENT_USER.email);
+  const curHash = await sha256Hex(acct.salt + cur);
+  if(curHash !== acct.passwordHash){ alert('Senha atual incorreta.'); return; }
+  const salt = uid();
+  acct.passwordHash = await sha256Hex(salt + nw);
+  acct.salt = salt;
+  await saveAccount(acct);
+  alert('Senha alterada com sucesso.');
+  document.getElementById('cf-curpass').value = '';
+  document.getElementById('cf-newpass').value = '';
+  document.getElementById('cf-newpass2').value = '';
+}
+
+/* ---------------- utilidades ---------------- */
+function fmtMoney(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function daysUntil(dateStr){
+  if(!dateStr) return null;
+  const d = new Date(dateStr+"T23:59:59");
+  const now = new Date();
+  return Math.ceil((d - now)/86400000);
+}
+function deadlineClass(p){
+  if(p.status==='concluido') return 'done';
+  const d = daysUntil(p.deadline);
+  if(d===null) return '';
+  if(d<0) return 'late';
+  if(d<=(DATA.settings.proxDays||3)) return 'warn';
+  return '';
+}
+function stageOverallProgress(p){
+  const vals = STAGE_KEYS.map(([k])=>p.stages[k]);
+  const done = vals.filter(v=>v==='concluido').length;
+  return Math.round(done/vals.length*100);
+}
+
+/* ---------------- navegação ---------------- */
+const NAV = [
+  ["dashboard","Painel","M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"],
+  ["kanban","Quadro","M4 4h4v16H4zM10 4h4v10h-4zM16 4h4v7h-4z"],
+  ["novo","Novo Projeto","M12 5v14M5 12h14"],
+  ["calendario","Calendário","M7 3v3M17 3v3M4 8h16M5 21h14a1 1 0 001-1V6a1 1 0 00-1-1H5a1 1 0 00-1 1v14a1 1 0 001 1z"],
+  ["financeiro","Financeiro","M3 21h18M6 21V10M12 21V4M18 21v-7"],
+  ["calculadoras","Calculadoras","M6 3h12a1 1 0 011 1v16a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1zM8 7h8M8 11h2M12 11h2M16 11h2M8 15h2M12 15h2M16 15h2"],
+  ["clientes","Clientes","M16 11a4 4 0 10-8 0 4 4 0 008 0zM2 21c0-4 4-7 10-7s10 3 10 7"],
+  ["config","Perfil & Backup","M12 15a3 3 0 100-6 3 3 0 000 6zM19 12a7 7 0 00-.1-1.2l2-1.6-2-3.4-2.3 1a7 7 0 00-2-1.2L14 3h-4l-.6 2.6a7 7 0 00-2 1.2l-2.3-1-2 3.4 2 1.6A7 7 0 005 12a7 7 0 00.1 1.2l-2 1.6 2 3.4 2.3-1a7 7 0 002 1.2L10 21h4l.6-2.6a7 7 0 002-1.2l2.3 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"]
+];
+
+function renderNav(){
+  const el = document.getElementById('sidenav');
+  if(!CURRENT_USER){ el.innerHTML = ''; el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.innerHTML = `<div class="brand"><span class="dot"></span>EditHub</div>` +
+    NAV.map(([id,label,path])=>`
+      <div class="navitem ${TAB===id?'active':''}" onclick="setTab('${id}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></svg>
+        <span>${label}</span>
+      </div>`).join('') +
+    `<div class="side-foot">Logado como <b>${CURRENT_USER.name||CURRENT_USER.email}</b><br>seus dados ficam salvos só na sua conta.<br><span class="logout-link" onclick="doLogout()">Sair da conta</span></div>`;
+}
+function setTab(id){ TAB=id; render(); }
+
+/* ---------------- render principal ---------------- */
+function render(){
+  renderNav();
+  const main = document.getElementById('main');
+  if(!CURRENT_USER){ main.innerHTML = viewAuth(); return; }
+  if(TAB==='dashboard') main.innerHTML = viewDashboard();
+  else if(TAB==='kanban') main.innerHTML = viewKanban();
+  else if(TAB==='novo') main.innerHTML = viewNovo();
+  else if(TAB==='calendario') main.innerHTML = viewCalendario();
+  else if(TAB==='financeiro') main.innerHTML = viewFinanceiro();
+  else if(TAB==='calculadoras') main.innerHTML = viewCalculadoras();
+  else if(TAB==='clientes') main.innerHTML = viewClientes();
+  else if(TAB==='config') main.innerHTML = viewConfig();
+}
+
+/* ---------------- AUTENTICAÇÃO (telas) ---------------- */
+function viewAuth(){
+  return `
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="brand" style="justify-content:center;padding-bottom:18px"><span class="dot"></span>EditHub</div>
+      <div class="auth-tabs">
+        <div class="auth-tab ${AUTH_MODE==='login'?'active':''}" onclick="AUTH_MODE='login';render()">Entrar</div>
+        <div class="auth-tab ${AUTH_MODE==='register'?'active':''}" onclick="AUTH_MODE='register';render()">Criar Conta</div>
+      </div>
+      ${AUTH_MODE==='login' ? authLoginForm() : authRegisterForm()}
+      <div id="auth-msg" class="auth-msg"></div>
+    </div>
+  </div>`;
+}
+function authLoginForm(){
+  return `
+    <div class="field"><label>E-mail</label><input id="au-email" type="email" placeholder="voce@email.com" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="field"><label>Senha</label><input id="au-pass" type="password" placeholder="Sua senha" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn" style="width:100%" onclick="doLogin()">Entrar</button>`;
+}
+function authRegisterForm(){
+  return `
+    <div class="field"><label>Nome</label><input id="au-name" placeholder="Como podemos te chamar"></div>
+    <div class="field"><label>E-mail</label><input id="au-email2" type="email" placeholder="voce@email.com"></div>
+    <div class="field"><label>Senha</label><input id="au-pass2" type="password" placeholder="Mínimo 6 caracteres"></div>
+    <div class="field"><label>Confirmar senha</label><input id="au-pass3" type="password" placeholder="Repita a senha"></div>
+    <div class="auth-hint">Sua senha fica protegida com hash (SHA-256) e seus projetos ficam vinculados só a essa conta.</div>
+    <button class="btn" style="width:100%" onclick="doRegister()">Criar Conta</button>`;
+}
+
+/* ---------------- DASHBOARD ---------------- */
+function filteredProjects(){
+  return DATA.projects.filter(p=>{
+    if(DASH_SEARCH && !(p.name+p.client).toLowerCase().includes(DASH_SEARCH.toLowerCase())) return false;
+    if(DASH_FILTER==='pendentes') return p.status!=='concluido';
+    if(DASH_FILTER==='atrasados') return p.status!=='concluido' && daysUntil(p.deadline)<0;
+    if(DASH_FILTER==='concluidos') return p.status==='concluido';
+    return true;
+  });
+}
+function viewDashboard(){
+  const list = filteredProjects();
+  return `
+  <div class="topbar">
+    <div><h1>Painel</h1><p>${DATA.projects.length} projeto(s) no total · ${DATA.projects.filter(p=>p.status!=='concluido').length} em aberto</p></div>
+    <button class="btn" onclick="setTab('novo')">+ Novo Projeto</button>
+  </div>
+  <div class="filters">
+    ${["todos","pendentes","atrasados","concluidos"].map(f=>`<div class="chip ${DASH_FILTER===f?'active':''}" onclick="DASH_FILTER='${f}';render()">${f[0].toUpperCase()+f.slice(1)}</div>`).join('')}
+    <input class="search" placeholder="Buscar projeto ou cliente..." value="${DASH_SEARCH}" oninput="DASH_SEARCH=this.value;render()">
+  </div>
+  ${list.length? `<div class="grid">${list.map(cardHtml).join('')}</div>` : `<div class="empty">Nenhum projeto por aqui. Crie o primeiro em "Novo Projeto".</div>`}
+  `;
+}
+function cardHtml(p){
+  const cls = deadlineClass(p);
+  const d = daysUntil(p.deadline);
+  let dtext = "sem prazo";
+  if(d!==null) dtext = p.status==='concluido' ? "concluído" : d<0 ? `atrasado ${Math.abs(d)}d` : d===0 ? "vence hoje" : `${d}d restantes`;
+  const cl = p.checklist||[];
+  const clDone = cl.filter(c=>c.done).length;
+  return `
+  <div class="card ${cls}">
+    <div class="card-head">
+      <div><h3>${p.name}</h3><div class="client">${p.client||'sem cliente'}</div></div>
+      <span class="tag">${p.category}</span>
+    </div>
+    <div class="deadline">Prazo: <b>${p.deadline? new Date(p.deadline+"T12:00:00").toLocaleDateString('pt-BR') : '—'}</b> · ${dtext}</div>
+    <div class="stages">
+      ${STAGE_KEYS.map(([k,label])=>`<div class="stage-pill" data-s="${p.stages[k]}" onclick="cycleStage('${p.id}','${k}')">${label}</div>`).join('')}
+    </div>
+    <div class="progress-wrap">
+      <input type="range" min="0" max="100" value="${p.progress}" oninput="setProgress('${p.id}',this.value)">
+      <span>${p.progress}%</span>
+    </div>
+    ${cl.length? `<details class="checklist">
+      <summary>Checklist (${clDone}/${cl.length})</summary>
+      ${cl.map((c,i)=>`<div class="cl-item ${c.done?'done':''}"><input type="checkbox" ${c.done?'checked':''} onchange="toggleChecklist('${p.id}',${i})"><span>${c.text}</span></div>`).join('')}
+      <button class="btn ghost small" style="margin-top:6px" onclick="applyChecklistProgress('${p.id}')">Usar checklist como progresso</button>
+    </details>` : ``}
+    <div class="card-value">${fmtMoney(p.value)}</div>
+    <div class="card-actions">
+      ${p.status!=='concluido'? `<button class="btn small secondary" onclick="markDone('${p.id}')">Concluir</button>`:''}
+      <button class="btn small ghost" onclick="saveAsTemplate('${p.id}')">Salvar como template</button>
+      <button class="btn small ghost" onclick="editProject('${p.id}')">Editar</button>
+      <button class="btn small danger" onclick="deleteProject('${p.id}')">Excluir</button>
+    </div>
+  </div>`;
+}
+function cycleStage(id,key){
+  const p = DATA.projects.find(x=>x.id===id);
+  const cur = STAGE_CYCLE.indexOf(p.stages[key]);
+  p.stages[key] = STAGE_CYCLE[(cur+1)%3];
+  saveData(); render();
+}
+function setProgress(id,val){
+  const p = DATA.projects.find(x=>x.id===id);
+  p.progress = parseInt(val);
+  saveData();
+}
+function toggleChecklist(id,idx){
+  const p = DATA.projects.find(x=>x.id===id);
+  p.checklist[idx].done = !p.checklist[idx].done;
+  saveData(); render();
+}
+function applyChecklistProgress(id){
+  const p = DATA.projects.find(x=>x.id===id);
+  const cl = p.checklist||[];
+  if(!cl.length) return;
+  p.progress = Math.round(cl.filter(c=>c.done).length/cl.length*100);
+  saveData(); render();
+}
+function markDone(id){
+  const p = DATA.projects.find(x=>x.id===id);
+  p.status='concluido'; p.progress=100;
+  STAGE_KEYS.forEach(([k])=>p.stages[k]='concluido');
+  saveData(); render();
+}
+function deleteProject(id){
+  if(!confirm("Excluir este projeto? Essa ação não pode ser desfeita.")) return;
+  DATA.projects = DATA.projects.filter(x=>x.id!==id);
+  saveData(); render();
+}
+function saveAsTemplate(id){
+  const p = DATA.projects.find(x=>x.id===id);
+  const t = {id:uid(), name:p.name+" (template)", category:p.category, value:p.value, stages:{...p.stages}, checklist:(p.checklist||[]).map(c=>({text:c.text,done:false})), isTemplate:true};
+  DATA.projects.push({...t, client:"", deadline:"", startDate:"", status:"pendente", progress:0});
+  saveData(); alert("Template salvo! Ele aparece na lista de projetos — edite os dados antes de usar, ou use o seletor de template ao criar um novo projeto.");
+  render();
+}
+
+/* ---------------- EDITAR (modal) ---------------- */
+function editProject(id){
+  const p = DATA.projects.find(x=>x.id===id);
+  document.getElementById('modal-root').innerHTML = `
+  <div class="modal-bg" onclick="if(event.target===this) closeModal()">
+    <div class="modal">
+      <h2>Editar Projeto</h2>
+      <div class="field"><label>Nome</label><input id="e-name" value="${p.name}"></div>
+      <div class="row2">
+        <div class="field"><label>Cliente</label><input id="e-client" value="${p.client||''}"></div>
+        <div class="field"><label>Categoria</label><select id="e-cat">${CATS.map(c=>`<option ${p.category===c?'selected':''}>${c}</option>`).join('')}</select></div>
+      </div>
+      <div class="field"><label>Valor (R$)</label><input id="e-value" type="number" step="0.01" value="${p.value}"></div>
+      <div class="row2">
+        <div class="field"><label>Data de Início (opcional)</label><input id="e-start" type="date" value="${p.startDate||''}"></div>
+        <div class="field"><label>Prazo</label><input id="e-deadline" type="date" value="${p.deadline||''}"></div>
+      </div>
+      <div class="field"><label>Checklist (uma tarefa por linha)</label><textarea id="e-checklist" rows="4">${(p.checklist||[]).map(c=>c.text).join('\\n')}</textarea></div>
+      <div class="modal-actions">
+        <button class="btn ghost" onclick="closeModal()">Cancelar</button>
+        <button class="btn" onclick="saveEdit('${id}')">Salvar Alterações</button>
+      </div>
+    </div>
+  </div>`;
+}
+function saveEdit(id){
+  const p = DATA.projects.find(x=>x.id===id);
+  p.name = document.getElementById('e-name').value.trim() || p.name;
+  p.client = document.getElementById('e-client').value.trim();
+  p.category = document.getElementById('e-cat').value;
+  p.value = parseFloat(document.getElementById('e-value').value)||0;
+  p.startDate = document.getElementById('e-start').value;
+  p.deadline = document.getElementById('e-deadline').value;
+  const oldDone = {}; (p.checklist||[]).forEach(c=>oldDone[c.text]=c.done);
+  p.checklist = document.getElementById('e-checklist').value.split('\n').map(t=>t.trim()).filter(Boolean).map(t=>({text:t,done:!!oldDone[t]}));
+  closeModal(); saveData(); render();
+}
+function closeModal(){ document.getElementById('modal-root').innerHTML=''; }
+
+/* ---------------- NOVO PROJETO ---------------- */
+function viewNovo(){
+  const templates = DATA.projects.filter(p=>p.isTemplate);
+  return `
+  <div class="topbar"><div><h1>Novo Projeto</h1><p>Preencha os dados para adicionar à sua lista.</p></div></div>
+  <div class="panel" style="max-width:600px">
+    ${templates.length? `<div class="field"><label>Usar Template</label>
+      <select id="n-template" onchange="fillFromTemplate(this.value)">
+        <option value="">Nenhum</option>
+        ${templates.map(t=>`<option value="${t.id}">${t.name}</option>`).join('')}
+      </select></div>`:''}
+    <div class="field"><label>Nome do Projeto</label><input id="n-name" placeholder="Ex: MMV — Cliente X"></div>
+    <div class="row2">
+      <div class="field"><label>Cliente</label><input id="n-client" placeholder="Nome do cliente"></div>
+      <div class="field"><label>Categoria</label><select id="n-cat">${CATS.map(c=>`<option>${c}</option>`).join('')}</select></div>
+    </div>
+    <div class="field"><label>Valor (R$)</label><input id="n-value" type="number" step="0.01" placeholder="0.00"></div>
+    <div class="row2">
+      <div class="field"><label>Data de Início (opcional)</label><input id="n-start" type="date"></div>
+      <div class="field"><label>Prazo de Entrega</label><input id="n-deadline" type="date"></div>
+    </div>
+    <div class="auth-hint" style="margin-top:-8px">Preencher a data de início ajuda o Calendário a mostrar sua janela de edição.</div>
+    <div class="field"><label>Status Iniciais das Etapas</label>
+      <div class="row2" style="grid-template-columns:repeat(4,1fr)">
+        ${STAGE_KEYS.map(([k,label])=>`<div><label style="margin-bottom:3px">${label}</label><select id="n-stage-${k}"><option value="pendente">Pendente</option><option value="andamento">Em Andamento</option><option value="concluido">Concluído</option></select></div>`).join('')}
+      </div>
+    </div>
+    <div class="field"><label>Checklist inicial (opcional, uma tarefa por linha)</label><textarea id="n-checklist" rows="3" placeholder="Ex: Selecionar clipes&#10;Sincronizar áudio&#10;Renderizar preview"></textarea></div>
+    <button class="btn" onclick="addProject()">Adicionar Projeto</button>
+  </div>`;
+}
+function fillFromTemplate(tid){
+  if(!tid) return;
+  const t = DATA.projects.find(x=>x.id===tid);
+  document.getElementById('n-name').value = t.name.replace(" (template)","");
+  document.getElementById('n-cat').value = t.category;
+  document.getElementById('n-value').value = t.value;
+  STAGE_KEYS.forEach(([k])=>document.getElementById('n-stage-'+k).value = t.stages[k]);
+  document.getElementById('n-checklist').value = (t.checklist||[]).map(c=>c.text).join('\n');
+}
+function addProject(){
+  const name = document.getElementById('n-name').value.trim();
+  if(!name){ alert("Dê um nome ao projeto."); return; }
+  const stages = {}; STAGE_KEYS.forEach(([k])=>stages[k]=document.getElementById('n-stage-'+k).value);
+  const checklist = document.getElementById('n-checklist').value.split('\n').map(t=>t.trim()).filter(Boolean).map(t=>({text:t,done:false}));
+  DATA.projects.push({
+    id: uid(), name,
+    client: document.getElementById('n-client').value.trim(),
+    category: document.getElementById('n-cat').value,
+    value: parseFloat(document.getElementById('n-value').value)||0,
+    startDate: document.getElementById('n-start').value,
+    deadline: document.getElementById('n-deadline').value,
+    stages, status: 'pendente', progress: 0, checklist
+  });
+  saveData(); DASH_FILTER='todos'; setTab('dashboard');
+}
+
+/* ---------------- KANBAN ---------------- */
+function viewKanban(){
+  const cols = [["pendente","Pendente"],["andamento","Em Andamento"],["concluido","Concluído"]];
+  return `
+  <div class="topbar"><div><h1>Quadro</h1><p>Arraste os cartões entre as colunas para atualizar o status.</p></div></div>
+  <div class="kanban">
+    ${cols.map(([key,label])=>{
+      const items = DATA.projects.filter(p=>p.status===key);
+      return `<div class="kan-col" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="dropCard(event,'${key}')">
+        <h3>${label} <span>${items.length}</span></h3>
+        ${items.map(p=>`<div class="kan-card" draggable="true" ondragstart="event.dataTransfer.setData('id','${p.id}')">
+          <b>${p.name}</b><span>${p.client||'—'} · ${fmtMoney(p.value)}</span>
+        </div>`).join('') || `<div class="empty" style="padding:16px;font-size:12px">vazio</div>`}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function dropCard(ev,status){
+  ev.preventDefault();
+  ev.currentTarget.classList.remove('dragover');
+  const id = ev.dataTransfer.getData('id');
+  const p = DATA.projects.find(x=>x.id===id);
+  if(p){ p.status = status; if(status==='concluido'){p.progress=100; STAGE_KEYS.forEach(([k])=>p.stages[k]='concluido');} }
+  saveData(); render();
+}
+
+/* ---------------- CALENDÁRIO ---------------- */
+function projectColor(id){
+  let hash=0; for(let i=0;i<id.length;i++){ hash = id.charCodeAt(i) + ((hash<<5)-hash); }
+  const hue = Math.abs(hash)%360;
+  return `hsl(${hue},60%,55%)`;
+}
+function projectsActiveOn(dateStr){
+  return DATA.projects.filter(p=>{
+    if(!p.deadline) return false;
+    const start = p.startDate || p.deadline;
+    return dateStr>=start && dateStr<=p.deadline;
+  });
+}
+function projectsDueOn(dateStr){ return DATA.projects.filter(p=>p.deadline===dateStr); }
+function remindersOn(dateStr){ return (DATA.settings.reminders||[]).filter(r=>r.date===dateStr); }
+
+function viewCalendario(){
+  const year = CAL_DATE.getFullYear(), month = CAL_DATE.getMonth();
+  const monthNames = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  const weekdayNames = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+  const first = new Date(year,month,1);
+  const startWeekday = first.getDay();
+  const daysInMonth = new Date(year,month+1,0).getDate();
+
+  let cells = '';
+  for(let i=0;i<startWeekday;i++) cells += `<div class="cal-cell empty-cell"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr = `${year}-${pad(month+1)}-${pad(d)}`;
+    const due = projectsDueOn(dateStr);
+    const active = projectsActiveOn(dateStr);
+    const rem = remindersOn(dateStr);
+    const isToday = dateStr===todayStr();
+    const isSel = dateStr===CAL_SELECTED;
+    const bars = active.slice(0,3).map(p=>`<div class="cal-bar" style="background:${projectColor(p.id)}" title="${p.name}"></div>`).join('');
+    const more = active.length>3? `<div class="cal-more">+${active.length-3}</div>`:'';
+    cells += `<div class="cal-cell ${isToday?'today':''} ${isSel?'selected':''}" onclick="selectCalDay('${dateStr}')">
+      <div class="cal-daynum">${d}${due.length?`<span class="cal-flag">●</span>`:''}${rem.length?`<span class="cal-rem">★</span>`:''}</div>
+      <div class="cal-bars">${bars}${more}</div>
+    </div>`;
+  }
+
+  return `
+  <div class="topbar">
+    <div><h1>Calendário</h1><p>Veja prazos, janelas de edição e outros projetos no mesmo período.</p></div>
+    <div class="cal-topbar-btns">
+      <button class="btn ghost small" onclick="calNav(-1)">‹ Mês anterior</button>
+      <button class="btn secondary small" onclick="calToday()">Hoje</button>
+      <button class="btn ghost small" onclick="calNav(1)">Próximo mês ›</button>
+    </div>
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0;text-align:center">${monthNames[month]} de ${year}</h3>
+    <div class="cal-grid cal-weekdays">${weekdayNames.map(w=>`<div class="cal-wd">${w}</div>`).join('')}</div>
+    <div class="cal-grid">${cells}</div>
+  </div>
+  <div class="panel">
+    ${calSelectedDetails()}
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">Lembretes Rápidos</h3>
+    <div class="row2">
+      <div class="field"><label>Texto do lembrete</label><input id="rem-text" placeholder="Ex: Enviar prévia para o cliente"></div>
+      <div class="field"><label>Data</label><input id="rem-date" type="date" value="${CAL_SELECTED}"></div>
+    </div>
+    <button class="btn secondary" onclick="addReminder()">Agendar</button>
+  </div>`;
+}
+function calSelectedDetails(){
+  const due = projectsDueOn(CAL_SELECTED);
+  const active = projectsActiveOn(CAL_SELECTED).filter(p=>p.deadline!==CAL_SELECTED);
+  const rem = remindersOn(CAL_SELECTED);
+  const dt = new Date(CAL_SELECTED+"T12:00:00");
+  let html = `<h3 style="margin-top:0;text-transform:capitalize">${dt.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'})}</h3>`;
+  if(!due.length && !active.length && !rem.length) return html+`<div class="empty">Nada agendado para este dia.</div>`;
+  if(due.length){
+    html += `<div style="margin-bottom:12px"><div style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:6px">PRAZO FINAL NESTE DIA</div>`;
+    html += due.map(p=>{
+      const janela = p.startDate? Math.round((new Date(p.deadline)-new Date(p.startDate))/86400000): null;
+      return `<div class="agenda-item late"><div><b>${p.name}</b><div style="color:var(--text-dim);font-size:12px">${p.client||'sem cliente'} · ${fmtMoney(p.value)}${janela!==null?` · janela de ${janela} dia(s) para editar`:' · sem data de início definida'}</div></div></div>`;
+    }).join('');
+    html += `</div>`;
+  }
+  if(active.length){
+    html += `<div style="margin-bottom:12px"><div style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:6px">OUTROS PROJETOS EM EDIÇÃO NESSE DIA</div>`;
+    html += active.map(p=>{
+      const d = daysUntil(p.deadline);
+      const txt = d<0? `atrasado ${Math.abs(d)}d` : d===0? "vence hoje" : `faltam ${d}d`;
+      return `<div class="agenda-item ok"><div><b>${p.name}</b><div style="color:var(--text-dim);font-size:12px">${p.client||'sem cliente'} · prazo em ${new Date(p.deadline+"T12:00:00").toLocaleDateString('pt-BR')}</div></div><div class="dleft">${txt}</div></div>`;
+    }).join('');
+    html += `</div>`;
+  }
+  if(rem.length){
+    html += `<div><div style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:6px">LEMBRETES</div>`;
+    html += rem.map((r)=>{
+      const idx = (DATA.settings.reminders||[]).indexOf(r);
+      return `<div class="agenda-item"><div><b>${r.text}</b></div><button class="btn small ghost" onclick="removeReminder(${idx})">Remover</button></div>`;
+    }).join('');
+    html += `</div>`;
+  }
+  return html;
+}
+function calNav(delta){ CAL_DATE = new Date(CAL_DATE.getFullYear(), CAL_DATE.getMonth()+delta, 1); render(); }
+function calToday(){ CAL_DATE = new Date(); CAL_SELECTED = todayStr(); render(); }
+function selectCalDay(d){ CAL_SELECTED = d; render(); }
+function addReminder(){
+  const text = document.getElementById('rem-text').value.trim();
+  const date = document.getElementById('rem-date').value;
+  if(!text||!date) return;
+  DATA.settings.reminders = DATA.settings.reminders||[];
+  DATA.settings.reminders.push({text,date});
+  CAL_SELECTED = date;
+  saveData(); render();
+}
+function removeReminder(i){ DATA.settings.reminders.splice(i,1); saveData(); render(); }
+
+/* ---------------- FINANCEIRO ---------------- */
+function viewFinanceiro(){
+  const done = DATA.projects.filter(p=>p.status==='concluido');
+  const active = DATA.projects.filter(p=>p.status!=='concluido');
+  const totalGanho = done.reduce((s,p)=>s+p.value,0);
+  const potencial = active.reduce((s,p)=>s+p.value,0);
+  const ticketMedio = done.length>0 ? totalGanho/done.length : 0;
+
+  const byMonth = {};
+  done.forEach(p=>{
+    if(!p.deadline) return;
+    const dt = new Date(p.deadline+"T12:00:00");
+    const key = dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,'0');
+    byMonth[key] = (byMonth[key]||0)+p.value;
+  });
+  const months = Object.keys(byMonth).sort();
+  const max = Math.max(1,...months.map(m=>byMonth[m]));
+  const monthNames = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+
+  return `
+  <div class="topbar"><div><h1>Financeiro</h1><p>Visão geral dos seus ganhos.</p></div></div>
+  <div class="stat-row">
+    <div class="stat"><div class="label">Total Ganho (Concluídos)</div><div class="value">${fmtMoney(totalGanho)}</div></div>
+    <div class="stat"><div class="label">Potencial (Em Andamento)</div><div class="value">${fmtMoney(potencial)}</div></div>
+    <div class="stat"><div class="label">Ticket médio por projeto concluído</div><div class="value">${done.length>0? fmtMoney(ticketMedio):'—'}</div></div>
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">Ganhos Mensais</h3>
+    ${months.length? `<div class="bars">${months.map(m=>{
+      const [y,mo]=m.split('-'); const h = Math.max(4, byMonth[m]/max*120);
+      return `<div class="bar" style="height:${h}px"><span>${fmtMoney(byMonth[m]).replace('R$','').trim()}</span><em>${monthNames[parseInt(mo)-1]}/${y.slice(2)}</em></div>`;
+    }).join('')}</div>` : `<div class="empty">Conclua projetos para ver seu gráfico de ganhos.</div>`}
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">Faturamento por Cliente</h3>
+    ${billingByClientTable()}
+  </div>`;
+}
+function billingByClientTable(){
+  const map = {};
+  DATA.projects.forEach(p=>{
+    const c = p.client || 'Sem cliente';
+    if(!map[c]) map[c]={total:0,ativos:0,concluidos:0};
+    if(p.status==='concluido'){ map[c].total+=p.value; map[c].concluidos++; } else map[c].ativos++;
+  });
+  const clients = Object.keys(map);
+  if(!clients.length) return `<div class="empty">Nenhum cliente cadastrado ainda.</div>`;
+  return `<table><tr><th>Cliente</th><th>Faturado</th><th>Projetos ativos</th><th>Concluídos</th></tr>
+    ${clients.sort((a,b)=>map[b].total-map[a].total).map(c=>`<tr><td>${c}</td><td>${fmtMoney(map[c].total)}</td><td>${map[c].ativos}</td><td>${map[c].concluidos}</td></tr>`).join('')}
+  </table>`;
+}
+
+/* ---------------- CALCULADORAS ---------------- */
+function viewCalculadoras(){
+  return `
+  <div class="topbar"><div><h1>Calculadoras</h1><p>Ferramentas rápidas para precificar seu trabalho.</p></div></div>
+  <div class="grid">
+    <div class="panel">
+      <h3 style="margin-top:0">Preço por Tempo</h3>
+      <div class="field"><label>Preço por minuto (R$)</label><input id="c1-price" type="number" step="0.01" placeholder="Ex: 25"></div>
+      <div class="row2">
+        <div class="field"><label>Minutos</label><input id="c1-min" type="number" placeholder="0"></div>
+        <div class="field"><label>Segundos</label><input id="c1-sec" type="number" placeholder="0"></div>
+      </div>
+      <button class="btn secondary" onclick="calc1()">Calcular Preço</button>
+      <div id="c1-result" style="margin-top:12px;font-size:18px;font-weight:700"></div>
+    </div>
+    <div class="panel">
+      <h3 style="margin-top:0">Desconto por Atraso</h3>
+      <div class="field"><label>Valor original (R$)</label><input id="c2-value" type="number" step="0.01"></div>
+      <div class="row2">
+        <div class="field"><label>Desconto por dia (%)</label><input id="c2-pct" type="number" step="0.1"></div>
+        <div class="field"><label>Dias de atraso</label><input id="c2-days" type="number"></div>
+      </div>
+      <button class="btn secondary" onclick="calc2()">Calcular Desconto</button>
+      <div id="c2-result" style="margin-top:12px;font-size:18px;font-weight:700"></div>
+    </div>
+    <div class="panel">
+      <h3 style="margin-top:0">Divisão de Pagamento (Colabs)</h3>
+      <p style="color:var(--text-dim);font-size:12.5px;margin-top:-4px">Útil para projetos feitos com outro editor, colorista ou animador.</p>
+      <div class="field"><label>Valor total do projeto (R$)</label><input id="c3-value" type="number" step="0.01"></div>
+      <div class="field"><label>Número de colaboradores</label><input id="c3-n" type="number" min="1" value="2"></div>
+      <button class="btn secondary" onclick="calc3()">Calcular Divisão</button>
+      <div id="c3-result" style="margin-top:12px;font-size:18px;font-weight:700"></div>
+    </div>
+  </div>`;
+}
+function calc1(){
+  const price = parseFloat(document.getElementById('c1-price').value)||0;
+  const min = parseFloat(document.getElementById('c1-min').value)||0;
+  const sec = parseFloat(document.getElementById('c1-sec').value)||0;
+  const total = price*(min+sec/60);
+  document.getElementById('c1-result').textContent = fmtMoney(total);
+}
+function calc2(){
+  const value = parseFloat(document.getElementById('c2-value').value)||0;
+  const pct = parseFloat(document.getElementById('c2-pct').value)||0;
+  const days = parseFloat(document.getElementById('c2-days').value)||0;
+  const desconto = Math.min(1, (pct/100)*days);
+  const final = value*(1-desconto);
+  document.getElementById('c2-result').innerHTML = `${fmtMoney(final)} <span style="font-size:12px;color:var(--text-dim);font-weight:400">(−${fmtMoney(value-final)})</span>`;
+}
+function calc3(){
+  const value = parseFloat(document.getElementById('c3-value').value)||0;
+  const n = parseInt(document.getElementById('c3-n').value)||1;
+  document.getElementById('c3-result').textContent = fmtMoney(value/n) + ` por pessoa`;
+}
+
+/* ---------------- CLIENTES ---------------- */
+function viewClientes(){
+  return `
+  <div class="topbar"><div><h1>Clientes</h1><p>Contatos e histórico rápido de quem você já atendeu.</p></div></div>
+  <div class="panel" style="max-width:500px">
+    <h3 style="margin-top:0">Adicionar Cliente</h3>
+    <div class="row2">
+      <div class="field"><label>Nome</label><input id="cl-name" placeholder="Nome do cliente"></div>
+      <div class="field"><label>Contato</label><input id="cl-contact" placeholder="Discord, e-mail, etc."></div>
+    </div>
+    <div class="field"><label>Notas</label><textarea id="cl-notes" rows="2" placeholder="Preferências, observações..."></textarea></div>
+    <button class="btn secondary" onclick="addClient()">Salvar Cliente</button>
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">Lista de Clientes</h3>
+    ${DATA.clients.length? `<table><tr><th>Nome</th><th>Contato</th><th>Notas</th><th></th></tr>
+      ${DATA.clients.map((c,i)=>`<tr><td>${c.name}</td><td>${c.contact||'—'}</td><td>${c.notes||'—'}</td><td><button class="btn small danger" onclick="removeClient(${i})">Excluir</button></td></tr>`).join('')}
+    </table>` : `<div class="empty">Nenhum cliente cadastrado manualmente ainda — clientes de projetos aparecem no Financeiro.</div>`}
+  </div>`;
+}
+function addClient(){
+  const name = document.getElementById('cl-name').value.trim();
+  if(!name) return;
+  DATA.clients.push({name, contact:document.getElementById('cl-contact').value.trim(), notes:document.getElementById('cl-notes').value.trim()});
+  saveData(); render();
+}
+function removeClient(i){ DATA.clients.splice(i,1); saveData(); render(); }
+
+/* ---------------- CONFIG / BACKUP ---------------- */
+function viewConfig(){
+  const s = DATA.settings;
+  return `
+  <div class="topbar"><div><h1>Perfil & Backup</h1><p>Personalize o app e mantenha seus dados seguros.</p></div></div>
+  <div class="panel" style="max-width:560px">
+    <h3 style="margin-top:0">Minha Conta</h3>
+    <div class="field"><label>E-mail de acesso</label><input value="${CURRENT_USER.email}" disabled></div>
+    <div class="field"><label>Nome / marca</label><input id="cf-name" value="${s.profileName||CURRENT_USER.name||''}"></div>
+    <div class="field"><label>Biografia</label><textarea id="cf-bio" rows="2">${s.bio||''}</textarea></div>
+    <div class="field"><label>Avisar prazo próximo com quantos dias de antecedência?</label><input id="cf-prox" type="number" value="${s.proxDays||3}"></div>
+    <button class="btn secondary" onclick="saveConfig()">Salvar Alterações</button>
+  </div>
+  <div class="panel" style="max-width:560px">
+    <h3 style="margin-top:0">Alterar Senha</h3>
+    <div class="field"><label>Senha atual</label><input id="cf-curpass" type="password"></div>
+    <div class="row2">
+      <div class="field"><label>Nova senha</label><input id="cf-newpass" type="password"></div>
+      <div class="field"><label>Confirmar nova senha</label><input id="cf-newpass2" type="password"></div>
+    </div>
+    <button class="btn secondary" onclick="changePassword()">Atualizar Senha</button>
+  </div>
+  <div class="panel" style="max-width:560px">
+    <h3 style="margin-top:0">Backup dos Dados</h3>
+    <p style="color:var(--text-dim);font-size:12.5px">Exporte um arquivo com todos os seus projetos, clientes e lembretes — útil para guardar uma cópia ou transferir para outro dispositivo/conta.</p>
+    <div class="card-actions">
+      <button class="btn secondary" onclick="exportBackup()">Exportar Backup (.json)</button>
+      <button class="btn ghost" onclick="document.getElementById('import-file').click()">Importar Backup</button>
+      <input type="file" id="import-file" accept=".json" class="hidden" onchange="importBackup(event)">
+    </div>
+  </div>
+  <div class="panel" style="max-width:560px">
+    <h3 style="margin-top:0;color:var(--late)">Zona de Risco</h3>
+    <button class="btn danger" onclick="resetAll()">Apagar todos os dados desta conta</button>
+  </div>`;
+}
+function saveConfig(){
+  DATA.settings.profileName = document.getElementById('cf-name').value;
+  DATA.settings.bio = document.getElementById('cf-bio').value;
+  DATA.settings.proxDays = parseInt(document.getElementById('cf-prox').value)||3;
+  saveData(); alert("Perfil atualizado.");
+}
+function exportBackup(){
+  const blob = new Blob([JSON.stringify(DATA,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'edithub-backup.json'; a.click();
+  URL.revokeObjectURL(url);
+}
+function importBackup(ev){
+  const file = ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const parsed = JSON.parse(e.target.result);
+      if(!parsed.projects) throw new Error("formato inválido");
+      DATA = parsed;
+      if(!DATA.settings) DATA.settings = { profileName:"", bio:"", proxDays:3, reminders:[] };
+      if(!DATA.clients) DATA.clients = [];
+      saveData(); render();
+      alert("Backup importado com sucesso!");
+    }catch(err){ alert("Não foi possível importar: arquivo inválido."); }
+  };
+  reader.readAsText(file);
+}
+function resetAll(){
+  if(!confirm("Isso apaga TODOS os projetos, clientes e lembretes salvos NESTA CONTA. Continuar?")) return;
+  DATA = defaultData();
+  saveData(); render();
+}
+
+init();
+</script>
+</body>
+</html>
